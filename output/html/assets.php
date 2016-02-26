@@ -125,7 +125,6 @@ class QM_Output_Html_Assets extends QM_Output_Html {
 		 * @param string $handle Script handle.
 		 */
 		$source = apply_filters( 'script_loader_src', $script->src, $script->handle );
-		$source = $script->src;
 
 		if ( is_wp_error( $source ) ) {
 			$src = $source->get_error_message();
