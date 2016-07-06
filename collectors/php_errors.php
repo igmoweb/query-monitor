@@ -43,7 +43,7 @@ class QM_Collector_PHP_Errors extends QM_Collector {
 		register_shutdown_function( array( $this, 'shutdown_handler' ) );
 
 		$this->display_errors = ini_get( 'display_errors' );
-		ini_set( 'display_errors', 0 );
+		//ini_set( 'display_errors', 0 );
 
 	}
 
@@ -151,7 +151,7 @@ class QM_Collector_PHP_Errors extends QM_Collector {
 
 	public function tear_down() {
 		parent::tear_down();
-		ini_set( 'display_errors', $this->display_errors );
+		//ini_set( 'display_errors', $this->display_errors );
 		restore_error_handler();
 	}
 

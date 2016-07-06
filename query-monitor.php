@@ -9,6 +9,7 @@ Author URI:  https://johnblackbourn.com/
 Text Domain: query-monitor
 Domain Path: /languages/
 License:     GPL v2 or later
+Network:True
 
 Copyright 2009-2016 John Blackbourn
 
@@ -50,14 +51,7 @@ foreach ( array( 'Backtrace', 'Collectors', 'Collector', 'Plugin', 'Util', 'Disp
 class QueryMonitor extends QM_Plugin {
 
 	protected function __construct( $file ) {
-
-		# Actions
-		add_action( 'plugins_loaded', array( $this, 'action_plugins_loaded' ) );
-		add_action( 'init',           array( $this, 'action_init' ) );
-
-		# Filters
-		add_filter( 'pre_update_option_active_plugins',               array( $this, 'filter_active_plugins' ) );
-		add_filter( 'pre_update_site_option_active_sitewide_plugins', array( $this, 'filter_active_sitewide_plugins' ) );
+		add_action( 'plugins_loaded', array( $this, 'check_permissions' ), 1 );
 
 		# [Dea|A]ctivation
 		register_activation_hook(   __FILE__, array( $this, 'activate' ) );
@@ -65,11 +59,6 @@ class QueryMonitor extends QM_Plugin {
 
 		# Parent setup:
 		parent::__construct( $file );
-
-		# Load and register built-in collectors:
-		foreach ( glob( $this->plugin_path( 'collectors/*.php' ) ) as $file ) {
-			include $file;
-		}
 
 	}
 
@@ -81,15 +70,76 @@ class QueryMonitor extends QM_Plugin {
 		}
 
 		# Load dispatchers:
-		foreach ( glob( $this->plugin_path( 'dispatchers/*.php' ) ) as $file ) {
-			include $file;
+		$path = $this->plugin_path( 'dispatchers/' );
+		$dispatchers = array(
+			'Redirect.php',
+			'REST.php',
+			'Html.php',
+			'AJAX.php',
+		);
+		foreach ( $dispatchers as $dispatcher ) {
+			include $path . $dispatcher;
 		}
 
 		# Register built-in and additional dispatchers:
 		foreach ( apply_filters( 'qm/dispatchers', array(), $this ) as $dispatcher ) {
 			QM_Dispatchers::add( $dispatcher );
 		}
+	}
 
+	public function check_permissions() {
+
+		// Turn this plugin off in two hours after activation in case we forgot to deactivate
+		$last_activation = get_site_option( 'qm_last_activation' );
+		if ( $last_activation + ( 3600 * 2 ) < time() ) {
+			deactivate_plugins( array( 'query-monitor/query-monitor.php' ), true, true );
+			deactivate_plugins( array( 'query-monitor/query-monitor.php' ), true );
+			$this->deactivate();
+			return;
+		}
+
+		$user = wp_get_current_user();
+		if ( 'campus' === $user->user_login ) {
+			$this->initialize();
+		}
+	}
+
+	private function initialize() {
+		add_action( 'plugins_loaded', array( $this, 'action_plugins_loaded' ) );
+
+		add_action( 'init',           array( $this, 'action_init' ) );
+
+		# Filters
+		add_filter( 'pre_update_option_active_plugins',               array( $this, 'filter_active_plugins' ) );
+		add_filter( 'pre_update_site_option_active_sitewide_plugins', array( $this, 'filter_active_sitewide_plugins' ) );
+
+		# Load and register built-in collectors:
+		$path = $this->plugin_path( 'collectors/' );
+		$collectors = array(
+			'db_queries.php',
+			'theme.php',
+			'php_errors.php',
+			'cache.php',
+			'transients.php',
+			'db_components.php',
+			'overview.php',
+			'db_dupes.php',
+			'environment.php',
+			'request.php',
+			'conditionals.php',
+			'hooks.php',
+			'admin.php',
+			'rewrites.php',
+			'redirects.php',
+			'languages.php',
+			'http.php',
+			'debug_bar.php',
+			'db_callers.php',
+			'assets.php',
+		);
+		foreach ( $collectors as $collector ) {
+			include $path . $collector;
+		}
 	}
 
 	public function activate( $sitewide = false ) {
@@ -108,6 +158,8 @@ class QueryMonitor extends QM_Plugin {
 			update_option( 'active_plugins', get_option( 'active_plugins'  ) );
 		}
 
+		update_site_option( 'qm_last_activation', time() );
+
 	}
 
 	public function deactivate() {
@@ -120,6 +172,8 @@ class QueryMonitor extends QM_Plugin {
 		if ( class_exists( 'QM_DB' ) ) {
 			unlink( WP_CONTENT_DIR . '/db.php' );
 		}
+
+		delete_site_option( 'qm_last_activation' );
 
 	}
 

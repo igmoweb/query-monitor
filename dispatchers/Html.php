@@ -209,8 +209,29 @@ class QM_Dispatcher_Html extends QM_Dispatcher {
 
 		require_once $this->qm->plugin_path( 'output/Html.php' );
 
-		foreach ( glob( $this->qm->plugin_path( 'output/html/*.php' ) ) as $file ) {
-			require_once $file;
+		$path = $this->qm->plugin_path( 'output/html/' );
+		$htmls = array(
+			'admin.php',
+			'conditionals.php',
+			'db_callers.php',
+			'assets.php',
+			'db_components.php',
+			'db_queries.php',
+			'environment.php',
+			'rewrites.php',
+			'debug_bar.php',
+			'request.php',
+			'transients.php',
+			'theme.php',
+			'http.php',
+			'php_errors.php',
+			'db_dupes.php',
+			'hooks.php',
+			'languages.php',
+			'overview.php',
+		);
+		foreach ( $htmls as $html ) {
+			require_once $path . $html;
 		}
 
 		$class = array(

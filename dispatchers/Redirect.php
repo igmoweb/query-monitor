@@ -53,8 +53,14 @@ class QM_Dispatcher_Redirect extends QM_Dispatcher {
 
 		require_once $this->qm->plugin_path( 'output/Headers.php' );
 
-		foreach ( glob( $this->qm->plugin_path( 'output/headers/*.php' ) ) as $file ) {
-			require_once $file;
+		$path = $this->qm->plugin_path( 'output/headers/' );
+		$headers = array(
+			'redirects.php',
+			'overview.php',
+			'php_errors.php'
+		);
+		foreach ( $headers as $header ) {
+			require_once $path . $header;
 		}
 	}
 
